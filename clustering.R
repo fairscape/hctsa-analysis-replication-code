@@ -10,14 +10,14 @@ vectorized_pdist <- function(A,B){
 }
 library(dplyr)
 setwd('/Path/to/Data/')
-df = fread('./normalized_sampled_data.csv', header = TRUE)
+df = fread('./normalized_data.csv', header = TRUE)
 
 #Have to calculate distance between all points many more points
 #takes really long time
-test <- df %>% group_by(id) %>% filter(row_number() == 1)
+test <- df %>% group_by(id)
 
 #Drop columns not included in clustering
-drops <- c('HR_Observations','SP_Observations','day','id','y','HR_time','SP_time')
+drops <- c('DN_Observations','id','time')
 test <- test[ , !(names(test) %in% drops)]
 rm(df)
 
@@ -46,13 +46,13 @@ dis <- sparseMatrix(i=rowscols[,1],    #rows to fill in
                     dims=c(nrow(dis),nrow(dis))) #dimensions
 dis <- as.data.frame(as.matrix(dis))
 
-names(dis) <- n
+names(dis) <- names(test)
 names(dis) <- gsub(" ",".",names(dis))
 names(dis) <- gsub("\\[",".",names(dis))
 names(dis) <- gsub("\\'",".",names(dis))
 names(dis) <- gsub("\\,",".",names(dis))
 names(dis) <- gsub("]",".",names(dis))
-rownames(dis) <- n
+rownames(dis) <- names(dis)
 
 #for number of clusters of interest
 #calculates lots of metrics about each set of clusters

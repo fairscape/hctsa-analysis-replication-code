@@ -23,41 +23,67 @@ sp = sp.rename(columns={'SP_id': 'id'})
 hr = hr.rename(columns={'HR_id': 'id'})
 
 df = pd.merge(hr, sp, on=['id','day'])
+mat_hr = pd.read_csv('./randomDailySample_matlab_HR.csv')
+mat_hr = mat_hr.add_prefix('HR_')
+mat_hr = mat_hr.rename(columns={'HR_id': 'id', 'HR_time': 'time'})
+mat_sp = pd.read_csv('./randomDailySample_matlab_SP.csv')
+mat_sp = mat_sp.add_prefix('SP_')
+mat_sp = mat_sp.rename(columns={'SP_id': 'id', 'SP_time': 'time'})
+df = pd.merge(df, mat_hr, on=['id','time'])
+df = pd.merge(df, mat_sp, on=['id','time'])
 
 #Optional: Include if interested in performance on just older babies
 # grouped = df.groupby("id")
 # too_short = list(grouped['day'].max().index[grouped['day'].max() < 7])
 # df = df[~df.id.isin(too_short)]
 
-print('Reading in Patient Outcome Data')
 
-patientDF = pd.read_excel('/data/UVA NICU Infants.xlsx')
-patientDF['id'] = patientDF['PatientID']
-patientDF = patientDF[['NICU Outcome','Outcome PMA','GestAge','GestAgeDays','id']].fillna(0)
-
-df = pd.merge(df, patientDF, on='id')
-df['PMA'] = df['GestAge'] + df['GestAgeDays'] / 7 + df['day'] / 7
 df = df.replace([np.inf, -np.inf], np.nan)
 df = df.select_dtypes(exclude=['object'])
-df['y'] = 0
-df['y'][np.logical_and(df['NICU Outcome'],(df['Outcome PMA'] - df['PMA']) <= 1)] = 1
-df = df.loc[:,df.isnull().mean() < .1]
+df = df.loc[:,df.isnull().mean() < .035]
 
 print('Building Cleaned Dataframe')
 
 X = df.dropna()
 ids = X['id']
-X = X.drop(['id'],axis = 1)
-Y = X['y']
+time = X['time']
+X = X.drop(['id','time'],axis = 1)
 X = X.loc[:,X.std() != 0]
+
 def normalize(x):
     #Normalizes column onto scale of 0-1
     return 1 / ( 1 + np.exp( - ( x - x.median() ) / ( 1.35 * (x.quantile(.75) - x.quantile(.25)) ) ) )
 
 X = X.transform(normalize)
 X = X.loc[:, X.isnull().sum() == 0]
-#Final number here will change move to however many columns you want to keep
-X = X.iloc[:,:3410]
-X['y'] = Y
+
+#Drop some specific columns unfit for modelling
+bad_index = []
+bad_column = []
+for i in range(len(list(distance.columns))):
+    column = list(distance.columns)[i]
+    if 'MD.pNN.pnn' in column:
+        bad_index.append(i)
+        bad_column.append(column)
+    if 'PH.' in column and 'res.acl' in column:
+        bad_index.append(i)
+        bad_column.append(column)
+    if 'EN.PermEn.3' in column:
+        bad_index.append(i)
+        bad_column.append(column)
+    if 'SY.LocalGlobal' in column and 'skew' in column:
+        bad_index.append(i)
+        bad_column.append(column)
+    if 'SY.LocalGlobal' in column and 'ac1' in column:
+        bad_index.append(i)
+        bad_column.append(column)
+    if 'SY.LocalGlobal' in column and 'kurtosis' in column:
+        bad_index.append(i)
+        bad_column.append(column)
+    if 'Time' in column or 'day' in column:
+        bad_index.append(i)
+        bad_column.append(column)
+
+X['time'] = time
 X['id'] = ids
 X.to_csv('/outputs/normalized_data.csv',index = False)

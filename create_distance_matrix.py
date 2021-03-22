@@ -5,53 +5,31 @@ import pandas as pd
 import os
 
 def norm_MI(x,y,xbins = [],ybins=[],bins=10):
-
     if xbins == []:
-
         c_xy = np.histogram2d(x, y, bins=10)[0]
-
     else:
-
         c_xy = np.histogram2d(x, y, bins=(xbins, ybins))[0]
-
     count = len(x)
-
     H_XY  = 0
     H_X   = 0
     H_Y   = 0
     H_XgY = 0
-
     for i in range(bins):
-
         px = sum(c_xy[i] / count)
-
         if px == 0:
-
             continue
-
         H_X += - px * math.log2(px)
-
         py = sum(c_xy[:,i] / count)
-
         H_Y += - py * math.log2(py)
-
         for j in range(bins):
-
             py = sum(c_xy[:,j] / count)
-
             if py == 0:
-
                 continue
-
             if c_xy[i][j] == 0:
-
                 continue
-
             H_XY  += - (c_xy[i][j] / count) * math.log2(   c_xy[i][j] / count)
             H_XgY += - (c_xy[i][j] / count) * math.log2( ( c_xy[i][j] / count) / py)
-
     I_XY = H_X - H_XgY
-
     return 1 - I_XY / H_XY
 
 def calc_ent(c_xy,count,bins):
@@ -61,7 +39,6 @@ def calc_ent(c_xy,count,bins):
             if c_xy[i][j] == 0:
                 continue
             H_X_Y += - (c_xy[i][j] / count) * math.log2(c_xy[i][j] / count)
-
     return H_X_Y
 
 def histedges_equalN(x, nbin):
@@ -75,8 +52,9 @@ file = '/data/normalized_data.csv'
 X =  pd.read_csv(file_name)
 
 #Remove columns not fit for clustering
+#May differ if you don't use both HR and SPo2 or don't group by day
 X = X.drop(['HR_Observations','SP_Observations','day','HR_time','SP_time'],axis = 1,errors='ignore')
-X = X.drop(['y','id'],axis = 1,errors='ignore')
+X = X.drop(['y','id','time'],axis = 1,errors='ignore')
 
 numCols = X.shape[1]
 
@@ -111,4 +89,4 @@ del X
 distance = pd.DataFrame(distance)
 distance.columns = col_names[:numCols]
 
-distance.to_csv('/outputs/distance_between_operations_HR_SP.csv',index = False)
+distance.to_csv('./Results/distance_between_operations_HR_SP.csv',index = False)
