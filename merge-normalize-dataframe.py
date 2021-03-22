@@ -60,8 +60,8 @@ X = X.loc[:, X.isnull().sum() == 0]
 #Drop some specific columns unfit for modelling
 bad_index = []
 bad_column = []
-for i in range(len(list(distance.columns))):
-    column = list(distance.columns)[i]
+for i in range(len(list(X.columns))):
+    column = list(X.columns)[i]
     if 'MD.pNN.pnn' in column:
         bad_index.append(i)
         bad_column.append(column)
@@ -83,7 +83,7 @@ for i in range(len(list(distance.columns))):
     if 'Time' in column or 'day' in column:
         bad_index.append(i)
         bad_column.append(column)
-
+X = X.drop(norm.columns[bad_index],axis=1)
 X['time'] = time
 X['id'] = ids
 X.to_csv('/outputs/normalized_data.csv',index = False)
